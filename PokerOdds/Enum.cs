@@ -12,7 +12,11 @@ namespace PokerOdds
     //
     public enum PokerHandType
     {
+        RoyalFlush //new
+            ,
         StraightFlush
+            ,
+        SteelWheel // new
         ,
         FourOfAKind
         ,
@@ -21,6 +25,8 @@ namespace PokerOdds
         Flush
         ,
         Straight
+            ,
+        Wheel // new
         ,
         ThreeOfAKind
         ,

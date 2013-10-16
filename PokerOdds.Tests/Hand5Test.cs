@@ -1,4 +1,8 @@
-﻿namespace PokerOdds.Tests
+﻿using PokerOdds;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+
+namespace PokerOdds.Tests
 {
     using PokerOdds;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -325,7 +329,7 @@
         }
 
         [TestMethod()]
-        public void All_Straights_Test()
+        public void All_StraightsWheels_Test()
         {
             var hands1 = Hand5.AllStraights();
             int cnt1 = hands1.Count();
@@ -334,6 +338,8 @@
             Assert.AreEqual(cnt1+cnt2, 10200);
             foreach (var h in hands1)
                 PokerHandTypeTest(h, PokerHandType.Straight);
+            foreach (var h in hands2)
+                PokerHandTypeTest(h, PokerHandType.Wheel);
         }
 
         [TestMethod()]
@@ -360,5 +366,20 @@
             foreach (var h in hands)
                 PokerHandTypeTest(h, PokerHandType.Pair);
         }
+        [TestMethod()]
+        public void All_HighCards_Test()
+        {
+            var hands = Hand5.AllHighCards();
+            Assert.AreEqual(hands.Count(), 1302540);
+            foreach (var h in hands)
+                PokerHandTypeTest(h, PokerHandType.HighCard);
+        }
+        [TestMethod()]
+        public void All_PossibleHands_Test()
+        {
+            var hands = Hand5.AllPossibleHands();
+            Assert.AreEqual(hands.Count(), 2598960);            
+        }
+
     }
 }

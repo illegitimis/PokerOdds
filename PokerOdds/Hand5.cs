@@ -14,11 +14,10 @@ namespace PokerOdds
     /// case your pocket is useless (bluffing aside, of course). So strike that 
     /// right away: if you can't beat your opponent with five cards, you've lost (or tied).
     /// </summary>
-#if DEBUG
-    [DebuggerDisplay("{c1}|{c2}|{c3}|{c4}|{c5}")]
-#endif
     public class Hand5 : IEnumerable<Card>
     {
+        
+
         public Card c1 { get; /*private*/ set; }
         public Card c2 { get; set; }
         public Card c3 { get; set; }
@@ -100,38 +99,53 @@ namespace PokerOdds
         {
             get
             {
-                if (IsStraightFlush)
-                    return PokerHandType.StraightFlush;
+                if (IsRoyalFlush)
+                    return PokerHandType.RoyalFlush;
                 else
                 {
-                    if (Is4OfAKind)
-                        return PokerHandType.FourOfAKind;
+                    if (IsStraightFlush)
+                        return PokerHandType.StraightFlush;
                     else
                     {
-                        if (IsFullHouse)
-                            return PokerHandType.FullHouse;
+                        if (IsSteelWheel)
+                            return PokerHandType.SteelWheel;
                         else
                         {
-                            if (IsFlush)
-                                return PokerHandType.Flush;
+                            if (Is4OfAKind)
+                                return PokerHandType.FourOfAKind;
                             else
                             {
-                                if (IsStraight)
-                                    return PokerHandType.Straight;
+                                if (IsFullHouse)
+                                    return PokerHandType.FullHouse;
                                 else
                                 {
-                                    if (Is3OfAKind)
-                                        return PokerHandType.ThreeOfAKind;
+                                    if (IsFlush)
+                                        return PokerHandType.Flush;
                                     else
                                     {
-                                        if (IsTwoPair)
-                                            return PokerOdds.PokerHandType.TwoPair;
+                                        if (IsStraight)
+                                            return PokerHandType.Straight;
                                         else
                                         {
-                                            if (IsOnePair)
-                                                return PokerOdds.PokerHandType.Pair;
+                                            if (IsWheel)
+                                                return PokerHandType.Wheel;
                                             else
-                                                return PokerHandType.HighCard;
+                                            {
+                                                if (Is3OfAKind)
+                                                    return PokerHandType.ThreeOfAKind;
+                                                else
+                                                {
+                                                    if (IsTwoPair)
+                                                        return PokerOdds.PokerHandType.TwoPair;
+                                                    else
+                                                    {
+                                                        if (IsOnePair)
+                                                            return PokerOdds.PokerHandType.Pair;
+                                                        else
+                                                            return PokerHandType.HighCard;
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -239,8 +253,14 @@ namespace PokerOdds
             }
         }
         //5
-        bool IsFlush { get { return IsSuit5(c1, c2, c3, c4, c5); }
-        }
+        bool IsFlush { get { return IsSuit5(c1, c2, c3, c4, c5); } }
+        //
+        bool IsWheel { get{
+            Face[] sf = GetFaces().ToArray();
+            Array.Sort (sf);
+            return (sf[0]==Face.Two && sf[1]==Face.Three && sf[2]==Face.Four && sf[3]==Face.Five && sf[4]==Face.Ace);            
+        }}
+
         bool IsStraight
         {
             get
@@ -256,7 +276,12 @@ namespace PokerOdds
                     return false;
             }
         }
-        bool IsStraightFlush { get { return IsFlush && IsStraight; } } 
+        //
+        bool IsSteelWheel { get { return IsWheel && IsFlush; } }
+
+        bool IsStraightFlush { get { return IsFlush && IsStraight; } }
+        //
+        bool IsRoyalFlush { get { return IsStraightFlush && GetFaces().Max() == Face.Ace; } }
         #endregion
         
         #region poker hand static utils
@@ -283,17 +308,67 @@ namespace PokerOdds
         public override int GetHashCode()
         {
             var oe = GetPokerHand.OrderBy(c => c.Index);
-            return oe.Aggregate(0, (acc, card) => 13 * acc + card.Index);
+            return oe.Aggregate(0, (acc, card) => Defines.DECK_LENGTH * acc + card.Index);
         }
 
+        public override string ToString()
+        {
+            return this.ToString("A");
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="format">
+        /// I - index
+        /// V - verbose
+        /// A - abbreviations
+        /// D - debug
+        /// </param>
+        /// <returns></returns>
+        public string ToString(string format)
+        {
+            switch (format)
+            {
+                case "H": // base 52 no
+                    return this.GetHashCode().ToString("000000000");
+                case "I":
+                { // all cards indices concatenated
+                    var cards = GetPokerHand.OrderBy(c => c.Index);
+                    var sb = cards.Aggregate(new StringBuilder(), (acc, card) => acc.Append(card.ToString("I")));
+                    return sb.ToString();
+                }
+                case "V":
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.Append(c1.ToString("V"));
+                    sb.Append(c2.ToString("V"));
+                    sb.Append(c3.ToString("V"));
+                    sb.Append(c4.ToString("V"));
+                    sb.Append(c5.ToString("V"));
+                    return sb.ToString();
+                }
+                case "A":
+                    { // all cards abbreviations concatenated
+                        var cards = GetPokerHand.OrderBy(c => c.Face).ThenBy(c => c.Color);
+                        var sb = cards.Aggregate(new StringBuilder(), (acc, card) => acc.Append(card.ToString("A")));
+                        return sb.ToString();
+                    }
+                default:
+                case "D":
+                    return string.Format("{0}|{1}|{2}|{3}|{4}", c1, c2, c3, c4, c5);
+            }
+        }
+
+        #region poker hand types enumerations
         //13*x+8 : 13*x+12, x = 0:3 
         //frequency: 4
-        public static IEnumerable<Hand5> AllRoyalFlushes ()
+        public static IEnumerable<Hand5> AllRoyalFlushes()
         {
             for (int x = 0; x < 4; x++)
             {
                 int i1 = 13 * x + 8;
-                int i2 = i1+1;
+                int i2 = i1 + 1;
                 int i3 = i2 + 1;
                 int i4 = i3 + 1;
                 int i5 = i4 + 1;
@@ -306,16 +381,16 @@ namespace PokerOdds
         public static IEnumerable<Hand5> AllStraightFlushes()
         { //up to 8 to avoid rf
             for (int d = 0; d < 8; d++)
-            { 
-            for (int x = 0; x < 4; x++)
             {
-                int i1 = 13 * x + d;
-                int i2 = i1 + 1;
-                int i3 = i2 + 1;
-                int i4 = i3 + 1;
-                int i5 = i4 + 1;
-                yield return new Hand5(i1, i2, i3, i4, i5);
-            }
+                for (int x = 0; x < 4; x++)
+                {
+                    int i1 = 13 * x + d;
+                    int i2 = i1 + 1;
+                    int i3 = i2 + 1;
+                    int i4 = i3 + 1;
+                    int i5 = i4 + 1;
+                    yield return new Hand5(i1, i2, i3, i4, i5);
+                }
             }
         }
 
@@ -347,10 +422,10 @@ namespace PokerOdds
                 //pick the fifth card 
                 for (int x = 0; x < Defines.DECK_LENGTH; x++)
                 {
-                    if (x != v1 && x!=v2 && x!=v3 && x!=v4)
-                    yield return new Hand5(v1, v2, v3, v4, x);
+                    if (x != v1 && x != v2 && x != v3 && x != v4)
+                        yield return new Hand5(v1, v2, v3, v4, x);
                 }
-            }           
+            }
         }
 
         // fqc: 3744 = 13*12*24
@@ -410,9 +485,9 @@ namespace PokerOdds
             // pick color
             for (int k = 0; k < Defines.SUITS_LENGTH; k++)
             {
-                for (int a = 0; a < Defines.RANK_LENGTH-4; a++)
+                for (int a = 0; a < Defines.RANK_LENGTH - 4; a++)
                 {
-                    for (int b = a+1; b < Defines.RANK_LENGTH - 3; b++)
+                    for (int b = a + 1; b < Defines.RANK_LENGTH - 3; b++)
                     {
                         for (int c = b + 1; c < Defines.RANK_LENGTH - 2; c++)
                         {
@@ -420,13 +495,13 @@ namespace PokerOdds
                             {
                                 for (int e = d + 1; e < Defines.RANK_LENGTH; e++)
                                 {
-                                    if (e-a>4 && !(a==0 && b==1 && c==2 && d==3 && e==12))
+                                    if (e - a > 4 && !(a == 0 && b == 1 && c == 2 && d == 3 && e == 12))
                                         yield return new Hand5(13 * k + a, 13 * k + b, 13 * k + c, 13 * k + d, 13 * k + e);
                                 }
                             }
                         }
                     }
-                }                
+                }
             }
         }
 
@@ -441,17 +516,18 @@ namespace PokerOdds
                         for (int z = 0; z < Defines.SUITS_LENGTH; z++)
                             for (int t = 0; t < Defines.SUITS_LENGTH; t++)
                                 for (int u = 0; u < Defines.SUITS_LENGTH; u++)
-                {
-                    int i1 = 13 * x + d;
-                    int i2 = 13 * y + d+1;
-                    int i3 = 13*z + d+2;
-                    int i4 = 13*t + d+3;
-                    int i5 = 13*u + d+4;
-                    if (!(x==y && y==z && z==t && t==u))
-                        yield return new Hand5(i1, i2, i3, i4, i5);
-                }
+                                {
+                                    int i1 = 13 * x + d;
+                                    int i2 = 13 * y + d + 1;
+                                    int i3 = 13 * z + d + 2;
+                                    int i4 = 13 * t + d + 3;
+                                    int i5 = 13 * u + d + 4;
+                                    if (!(x == y && y == z && z == t && t == u))
+                                        yield return new Hand5(i1, i2, i3, i4, i5);
+                                }
             }
         }
+
         //1020
         public static IEnumerable<Hand5> AllWheels()
         {
@@ -482,13 +558,13 @@ namespace PokerOdds
                 int a3 = a2 + Defines.RANK_LENGTH;
                 int a4 = a3 + Defines.RANK_LENGTH;
                 // pick the other 2 values
-                for (int b = 0; b < Defines.DECK_LENGTH-1; b++)
+                for (int b = 0; b < Defines.DECK_LENGTH - 1; b++)
                 {
                     if (b == a1 || b == a2 || b == a3 || b == a4)
                         continue;
-                    for (int c = b+1; c < Defines.DECK_LENGTH; c++)
+                    for (int c = b + 1; c < Defines.DECK_LENGTH; c++)
                     {
-                        if (c == a1 || c == a2 || c == a3 || c == a4 || (c-b)%13==0)
+                        if (c == a1 || c == a2 || c == a3 || c == a4 || (c - b) % 13 == 0)
                             continue;
                         //
                         yield return new Hand5(a1, a2, a3, b, c);
@@ -507,7 +583,7 @@ namespace PokerOdds
             for (int b = 0; b < Defines.RANK_LENGTH - 1; b++)
             { // get 2 out of 4 possible values
                 int v1 = b;
-                int v2 = v1+Defines.RANK_LENGTH;
+                int v2 = v1 + Defines.RANK_LENGTH;
                 int v3 = v2 + Defines.RANK_LENGTH;
                 int v4 = v3 + Defines.RANK_LENGTH;
                 // pick larger pair value
@@ -516,7 +592,7 @@ namespace PokerOdds
                     int u1 = c;
                     int u2 = u1 + Defines.RANK_LENGTH;
                     int u3 = u2 + Defines.RANK_LENGTH;
-                    int u4 = u3 + Defines.RANK_LENGTH;   
+                    int u4 = u3 + Defines.RANK_LENGTH;
                     // get off card
                     for (int o = 0; o < Defines.DECK_LENGTH; o++)
                     {
@@ -567,10 +643,10 @@ namespace PokerOdds
                         yield return new Hand5(v3, v4, u3, u4, o);
                     }
                 }
-            }            
+            }
         }
 
-        // fqc:  	1,098,240
+        // fqc: 1,098,240
         public static IEnumerable<Hand5> All1Pairs()
         {
             // pick pair value
@@ -580,15 +656,15 @@ namespace PokerOdds
                 int v2 = v1 + Defines.RANK_LENGTH;
                 int v3 = v2 + Defines.RANK_LENGTH;
                 int v4 = v3 + Defines.RANK_LENGTH;
-             
+
                 // get off cards
-                for (int o1 = 0; o1 < Defines.DECK_LENGTH-2; o1++)
+                for (int o1 = 0; o1 < Defines.DECK_LENGTH - 2; o1++)
                 {
                     if (o1 == v1 || o1 == v2 || o1 == v3 || o1 == v4) continue;
-                    for (int o2 = o1+1; o2 < Defines.DECK_LENGTH-1; o2++)
+                    for (int o2 = o1 + 1; o2 < Defines.DECK_LENGTH - 1; o2++)
                     {
-                        if (o2 == v1 || o2 == v2 || o2 == v3 || o2 == v4 || (o2-o1)%13==0) continue;
-                        for (int o3 = o2+1; o3 < Defines.DECK_LENGTH; o3++)
+                        if (o2 == v1 || o2 == v2 || o2 == v3 || o2 == v4 || (o2 - o1) % 13 == 0) continue;
+                        for (int o3 = o2 + 1; o3 < Defines.DECK_LENGTH; o3++)
                         {
                             if (o3 == v1 || o3 == v2 || o3 == v3 || o3 == v4 || (o3 - o2) % 13 == 0 || (o3 - o1) % 13 == 0) continue;
                             //
@@ -601,8 +677,61 @@ namespace PokerOdds
                         }
                     }
                 }
-                
+
             }
         }
+
+        //fqc = 1,302,540
+        public static IEnumerable<Hand5> AllHighCards()
+        {
+            for (int v1 = 0; v1 < Defines.DECK_LENGTH - 4; v1++)
+            {
+                for (int v2 = 1 + v1; v2 < Defines.DECK_LENGTH - 3; v2++)
+                {   // same remainder means a pair                    
+                    if (v2 % 13 == v1 % 13) continue;
+                    for (int v3 = v2 + 1; v3 < Defines.DECK_LENGTH - 2; v3++)
+                    {
+                        if (v3 % 13 == v1 % 13 || v2 % 13 == v3 % 13) continue;
+                        for (int v4 = v3 + 1; v4 < Defines.DECK_LENGTH - 1; v4++)
+                        {
+                            if ((v4 - v1) % 13 == 0 || (v4 - v2) % 13 == 0 || (v4 - v3) % 13 == 0) continue;
+                            for (int v5 = v4 + 1; v5 < Defines.DECK_LENGTH; v5++)
+                            {
+                                if ((v5 - v1) % 13 == 0 || (v5 - v2) % 13 == 0 || (v5 - v3) % 13 == 0 || (v5 - v4) % 13 == 0) continue;
+                                var h = new Hand5(v1, v2, v3, v4, v5);
+                                //if (h.PokerHandType == PokerHandType.HighCard)
+                                if (!h.IsWheel && !h.IsStraight && !h.IsFlush)
+                                    yield return h;
+                            }
+                        }
+                    }
+                }
+
+            }
+        }
+
+        // 5 out 0f 52 = 2598960
+        public static IEnumerable<Hand5> AllPossibleHands()
+        {
+            for (int v1 = 0; v1 < Defines.DECK_LENGTH - 4; v1++)
+            {
+                for (int v2 = 1 + v1; v2 < Defines.DECK_LENGTH - 3; v2++)
+                {
+                    for (int v3 = v2 + 1; v3 < Defines.DECK_LENGTH - 2; v3++)
+                    {
+                        for (int v4 = v3 + 1; v4 < Defines.DECK_LENGTH - 1; v4++)
+                        {
+                            for (int v5 = v4 + 1; v5 < Defines.DECK_LENGTH; v5++)
+                            {
+                                var h = new Hand5(v1, v2, v3, v4, v5);
+                                yield return h;
+                            }
+                        }
+                    }
+                }
+
+            }
+        } 
+        #endregion
     }
 }

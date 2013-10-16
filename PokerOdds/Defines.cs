@@ -8,8 +8,9 @@ namespace PokerOdds
 {
     public static class Defines
     {
-        static readonly IDictionary<Face, char> FaceAbbreviations;
-       
+        public static readonly IDictionary<Face, char> FaceAbbreviations;
+        public static readonly IDictionary<Color, char> ColorAbbreviations;
+
         public static readonly IEnumerable<Color> AllColors = (Color[])Enum.GetValues(typeof(Color));
         public static readonly IEnumerable<Face> AllFaces = (Face[])Enum.GetValues(typeof(Face));
 
@@ -45,7 +46,7 @@ namespace PokerOdds
         public static readonly Card DJ = new Card(Color.Diamond, Face.Jack);
         public static readonly Card DQ = new Card(Color.Diamond, Face.Queen);
         public static readonly Card DK = new Card(Color.Diamond, Face.King);
-        public static readonly Card DA = new Card(Color.Diamond, Face.Ace);    
+        public static readonly Card DA = new Card(Color.Diamond, Face.Ace);
         //
         public static readonly Card S2 = new Card(Color.Spade, Face.Two);
         public static readonly Card S3 = new Card(Color.Spade, Face.Three);
@@ -74,12 +75,12 @@ namespace PokerOdds
         public static readonly Card HQ = new Card(Color.Heart, Face.Queen);
         public static readonly Card HK = new Card(Color.Heart, Face.King);
         public static readonly Card HA = new Card(Color.Heart, Face.Ace);
-        
+
         //static readonly Card[] AllCards = new Card[]
         //{
         //    new Card () { Color= Color.Club, Face=Face.Two },
         //};
-        
+
         static Defines()
         {
             FaceAbbreviations = new Dictionary<Face, char>()
@@ -97,6 +98,19 @@ namespace PokerOdds
                 {Face.Queen,'Q'} ,
                 {Face.King,'K'} ,                
                 {Face.Ace,'A'} ,
+            };
+
+            ColorAbbreviations = new Dictionary<Color, char>()
+            {
+                //{Color.Club,'C'} ,
+                //{Color.Diamond,'D'} ,
+                //{Color.Heart,'H'} ,
+                //{Color.Spade,'S'} ,
+                //  
+                {Color.Club,'♣'} ,
+                {Color.Diamond,'♦'} ,
+                {Color.Heart,'♥'} ,
+                {Color.Spade,'♠'} ,
             };
         }
     }
