@@ -12,21 +12,23 @@ namespace PokerOdds
         public Color Color { get; private set; }
         public Face Face { get; private set; }
         public int Index { get; private set; }
+        public byte Rank { get; private set; }
 
         #region life
         public Card(Color color, Face face)
         {
             this.Color = color;
             this.Face = face;
-            this.Index = (int)color * 13 + (int)face - 2;
+            this.Rank = (byte)((byte)face - 2);
+            this.Index = (int)color * 13 + this.Rank;
         }
 
         public Card(int index)
         {
             this.Index = index;
             this.Color = (Color)(index / 13);
-            this.Face = (Face)((index % 13) + 2);
-
+            this.Rank = (byte)(index % 13);
+            this.Face = (Face)(this.Rank + 2);
         }
         #endregion
 

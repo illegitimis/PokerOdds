@@ -6,38 +6,38 @@ using System.Threading.Tasks;
 
 namespace PokerOdds
 {
-    public enum Color : int { Club = 0, Diamond = 1, Spade = 2, Heart = 3 }
+    public enum Color : byte { Club = 0, Diamond = 1, Spade = 2, Heart = 3 }
     //
-    public enum Face : int { Two = 2, Three = 3, Four = 4, Five = 5, Six = 6, Seven = 7, Eight = 8, Nine = 9, Ten = 10, Jack = 11, Queen = 12, King = 13, Ace = 14 }
+    public enum Face : byte { Two = 2, Three = 3, Four = 4, Five = 5, Six = 6, Seven = 7, Eight = 8, Nine = 9, Ten = 10, Jack = 11, Queen = 12, King = 13, Ace = 14 }
     //
-    public enum PokerHandType
+    public enum PokerHandType : byte
     {
-        RoyalFlush //new
+        RoyalFlush = 11 //new
             ,
-        StraightFlush
+        StraightFlush = 10
             ,
-        SteelWheel // new
+        SteelWheel = 9// new
         ,
-        FourOfAKind
+        FourOfAKind = 8
         ,
-        FullHouse
+        FullHouse = 7
         ,
-        Flush
+        Flush = 6
         ,
-        Straight
+        Straight = 5
             ,
-        Wheel // new
+        Wheel = 4// new
         ,
-        ThreeOfAKind
+        ThreeOfAKind = 3
         ,
-        TwoPair
+        TwoPair = 2
         ,
-        Pair
+        Pair = 1
         ,
         /// <summary>
         /// kickers
         /// </summary>
-        HighCard,        
+        HighCard = 0,
     }
 
 

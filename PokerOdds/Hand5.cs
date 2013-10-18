@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace PokerOdds
+﻿namespace PokerOdds
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+
     /// <summary>
     /// The first thing to mention is definitely that there are no extra cards. 
     /// Poker hands are evaluated with exactly five cards. 
@@ -14,87 +12,47 @@ namespace PokerOdds
     /// case your pocket is useless (bluffing aside, of course). So strike that 
     /// right away: if you can't beat your opponent with five cards, you've lost (or tied).
     /// </summary>
-    public class Hand5 : IEnumerable<Card>
+    public class Hand5 : IEnumerable<Card>, IComparable<Hand5>, IComparable
     {
-        
+        #region fields for ranking computation
+        int? _rankSTFL = null;
+        int? _rankFL = null;
+        int? _rankST = null;
+        int? _rank4 = null;
+        int? _rankFH = null;
+        int? _rank3 = null;
+        int? _rank2p = null;
+        int? _rank1p = null;
+        int? _rankhc = null;
+        //
+        byte _sqHi;
+        byte _sqLow;
+        byte _fhHi;
+        byte _fhLow;
+        byte _3kv;
+        byte _3ka;
+        byte _3kb;
+        byte _2pM;
+        byte _2pm;
+        byte _2pr;
+        byte _1p;
+        #endregion
 
+        private PokerOdds.PokerHandType? _pht;
+        private int? _hc;
+        private int? _rc;
+        private int? _clsrnk;
+        string _stringI;
+        string _stringA;
+
+        #region public props
         public Card c1 { get; /*private*/ set; }
         public Card c2 { get; set; }
         public Card c3 { get; set; }
         public Card c4 { get; set; }
         public Card c5 { get; set; }
-
-        public Hand5 ()  {}
-        // ints must be sorted ?
-        public Hand5 (int i1, int i2, int i3, int i4, int i5)  
-        {
-            c1=i1; c2=i2; c3=i3; c4=i4; c5=i5;
-        }
-        public Hand5(Card i1, Card i2, Card i3, Card i4, Card i5)
-        {
-            c1 = i1; c2 = i2; c3 = i3; c4 = i4; c5 = i5;
-        }
-        IEnumerable<Card> GetPokerHand
-        {
-            get{
-            yield return c1;
-            yield return c2;
-            yield return c3;
-            yield return c4;
-            yield return c5;
-            }
-        }
-        //
-        IEnumerable<Face> GetFaces() {return GetPokerHand.Select(c => c.Face); } 
-        IEnumerable<Color> GetSuits() { return GetPokerHand.Select(c => c.Color); } 
-        //
-        /// <summary>
-    /// The next step is to evaluate the hands. It starts like this:
-    ///Does any single player have a STRAIGHT FLUSH? If yes, he is the winner.
-    ///Do multiple players have a straight flush? If yes, the winner is the one with the highest card. 
-    ///If multiple people share the highest card (obviously in a different suit) they split the pot. 
-    ///(Note: Royal flush is excluded because it's just a special straight flush that no one else can beat.)
-    ///Does any single player have 4 OF A KIND? If yes, he is the winner.
-    ///Do multiple players have 4 of a kind? If yes, the one with the highest 'set of 4' is the winner. 
-    ///If multiple players have the highest set of 4 (which is not achievable with a standard poker deck, 
-    ///but is with a double deck or community cards), the one with the highest kicker 
-    ///(highest card not in the set of 4) is the winner. If this card is the same, they split the pot.
-    ///Does any single player have a FULL HOUSE? If yes, he is the winner.
-    ///Do multiple players have full houses? If yes, then keeping in mind that a full house is a 3-set and a 2-set,
-    ///the player with the highest 3-set wins the pot. If multiple players share the highest 3-set 
-    ///(which isn't possible without community cards like in hold 'em, or a double deck) 
-    ///then the player with the highest 2-set is the winner. 
-    ///If the 2-set and 3-set is the same, those players split the pot.
-    ///Does any single player have a FLUSH? If yes, he is the winner.
-    ///Do multiple players have a flush? If yes, the player with a flush with the highest unique card is the winner. 
-    ///This hand is similar to 'high card' resolution, where each card is effectively a kicker. 
-    ///Note that a flush requires the same suit, not just color. While the colors used on the suit are red and black,
-    ///two each, there's nothing to that connection. A club is no more similar to a spade than it is to a heart 
-    ///- only suit matters. The colors are red and black for historical purposes and so the same deck can be played 
-    ///for other games where that might matter. A player who has TS JS QS KS AC has a hand that looks great but 
-    ///is really just ace high... :)
-    ///Does any single player have a STRAIGHT? If yes, he wins the pot.
-    ///Do multiple players have straights? If so, the player with the highest straight wins. 
-    ///(a-2-3-4-5 is the lowest straight, while 10-j-q-k-a is the highest straight.) 
-    ///If multiple players share the highest straight, they split the pot.
-    ///Does any single player have a 3 OF A KIND? If yes, he wins the pot.
-    ///Do multiple players have 3 of a kind? If yes, the player with the highest 3-set wins the pot. 
-    ///If multiple players have the highest 3-set, the player with the highest kicker wins the pot. 
-    ///If multiple players tie for highest 3-set and highest kicker, the player with the next highest 
-    ///kicker wins the pot. If the players tie for the highest 3-set, highest kicker, 
-    ///and highest second kicker, the players split the pot.
-    ///Does any single player have 2-PAIR? If yes, he wins the pot.
-    ///Do multiple players have 2-pair? If yes, the player with the highest pair wins the pot. 
-    ///If multiple players tie for the highest pair, the player with the second highest pair wins the pot. 
-    ///If multiple players tie for both pairs, the player with the highest kicker wins the pot. 
-    ///If multiple players tiw for both pairs and the kicker, the players split the pot.
-    ///Does any single player have a pair? If yes, he wins the pot.
-    ///Do multiple players have A PAIR? If yes, the player with the highest pair win. 
-    ///If multiple players have the highest pair, the player with the highest kicker wins. 
-    ///Compare second and third kickers as expected to resolve conflicts, or split if all three kickers tie.
-    ///At this point, all cards are kickers, so compare the first, second, third, fourth, and if necessary, 
-    ///fifth highest cards in order until a winner is resolved, or split the pot if the hands are identical.
-    /// </summary>
+        
+        /*
         public PokerHandType PokerHandType
         {
             get
@@ -155,7 +113,202 @@ namespace PokerOdds
                 }
             }
         }
-        //
+        */
+                
+        /// <summary>
+        /// The next step is to evaluate the hands. It starts like this:
+        ///Does any single player have a STRAIGHT FLUSH? If yes, he is the winner.
+        ///Do multiple players have a straight flush? If yes, the winner is the one with the highest card. 
+        ///If multiple people share the highest card (obviously in a different suit) they split the pot. 
+        ///(Note: Royal flush is excluded because it's just a special straight flush that no one else can beat.)
+        ///Does any single player have 4 OF A KIND? If yes, he is the winner.
+        ///Do multiple players have 4 of a kind? If yes, the one with the highest 'set of 4' is the winner. 
+        ///If multiple players have the highest set of 4 (which is not achievable with a standard poker deck, 
+        ///but is with a double deck or community cards), the one with the highest kicker 
+        ///(highest card not in the set of 4) is the winner. If this card is the same, they split the pot.
+        ///Does any single player have a FULL HOUSE? If yes, he is the winner.
+        ///Do multiple players have full houses? If yes, then keeping in mind that a full house is a 3-set and a 2-set,
+        ///the player with the highest 3-set wins the pot. If multiple players share the highest 3-set 
+        ///(which isn't possible without community cards like in hold 'em, or a double deck) 
+        ///then the player with the highest 2-set is the winner. 
+        ///If the 2-set and 3-set is the same, those players split the pot.
+        ///Does any single player have a FLUSH? If yes, he is the winner.
+        ///Do multiple players have a flush? If yes, the player with a flush with the highest unique card is the winner. 
+        ///This hand is similar to 'high card' resolution, where each card is effectively a kicker. 
+        ///Note that a flush requires the same suit, not just color. While the colors used on the suit are red and black,
+        ///two each, there's nothing to that connection. A club is no more similar to a spade than it is to a heart 
+        ///- only suit matters. The colors are red and black for historical purposes and so the same deck can be played 
+        ///for other games where that might matter. A player who has TS JS QS KS AC has a hand that looks great but 
+        ///is really just ace high... :)
+        ///Does any single player have a STRAIGHT? If yes, he wins the pot.
+        ///Do multiple players have straights? If so, the player with the highest straight wins. 
+        ///(a-2-3-4-5 is the lowest straight, while 10-j-q-k-a is the highest straight.) 
+        ///If multiple players share the highest straight, they split the pot.
+        ///Does any single player have a 3 OF A KIND? If yes, he wins the pot.
+        ///Do multiple players have 3 of a kind? If yes, the player with the highest 3-set wins the pot. 
+        ///If multiple players have the highest 3-set, the player with the highest kicker wins the pot. 
+        ///If multiple players tie for highest 3-set and highest kicker, the player with the next highest 
+        ///kicker wins the pot. If the players tie for the highest 3-set, highest kicker, 
+        ///and highest second kicker, the players split the pot.
+        ///Does any single player have 2-PAIR? If yes, he wins the pot.
+        ///Do multiple players have 2-pair? If yes, the player with the highest pair wins the pot. 
+        ///If multiple players tie for the highest pair, the player with the second highest pair wins the pot. 
+        ///If multiple players tie for both pairs, the player with the highest kicker wins the pot. 
+        ///If multiple players tiw for both pairs and the kicker, the players split the pot.
+        ///Does any single player have a pair? If yes, he wins the pot.
+        ///Do multiple players have A PAIR? If yes, the player with the highest pair win. 
+        ///If multiple players have the highest pair, the player with the highest kicker wins. 
+        ///Compare second and third kickers as expected to resolve conflicts, or split if all three kickers tie.
+        ///At this point, all cards are kickers, so compare the first, second, third, fourth, and if necessary, 
+        ///fifth highest cards in order until a winner is resolved, or split the pot if the hands are identical.
+        /// </summary>
+        public PokerHandType PokerHandType
+        {
+            get
+            {
+                if (_pht.HasValue) return _pht.Value;
+                else
+                {
+                    if (IsFlush)
+                    {
+                        if (IsWheel)
+                        { // straight to Face.5 == rank 3, lowest straight flush 
+                            _rankSTFL = 0;
+                            return PokerOdds.PokerHandType.SteelWheel;
+                        }
+                        else if (IsStraight)
+                        { // straight flush ranks go from [0 to 9]
+                            _rankSTFL = GetRanks().Max() - 3;
+                            return (_rankSTFL == 9) ? PokerOdds.PokerHandType.RoyalFlush : PokerOdds.PokerHandType.StraightFlush;
+                        }
+                        else
+                        { // simple flush
+                            _rankFL = GetRankCode();
+                            return PokerOdds.PokerHandType.Flush;
+                        }
+                    }
+                    else
+                    {
+                        if (Is4OfAKind) { _rank4 = RankDistinct(new[] { _sqHi, _sqLow }); return PokerHandType.FourOfAKind; }
+                        else
+                        {
+                            if (IsFullHouse) { _rankFH = RankDistinct(new[] { _fhHi, _fhLow }); return PokerHandType.FullHouse; }
+                            else
+                            {
+                                if (IsStraight) { _rankST = GetRanks().Max() - 3; return PokerHandType.Straight; }
+                                else
+                                {
+                                    if (IsWheel) { _rankST = 0; return PokerHandType.Wheel; }
+                                    else
+                                    {
+                                        if (Is3OfAKind)
+                                        {
+                                            byte b1 = 0, b2 = 0;
+                                            if (_3ka > _3kb) { b1 = _3ka; b2 = _3kb; } else { b2 = _3ka; b1 = _3kb; }
+                                            _rank3 = RankDistinct(new[] { _3kv, b1, b2 });
+                                            return PokerHandType.ThreeOfAKind;
+                                        }
+                                        else
+                                        {
+                                            if (IsTwoPair)
+                                            {
+                                                byte b1 = 0, b2 = 0;
+                                                if (_2pM > _2pm) { b1 = _2pM; b2 = _2pm; } else { b2 = _2pM; b1 = _2pm; }
+                                                _rank2p = RankDistinct(new[] { b1, b2, _2pr });
+                                                return PokerOdds.PokerHandType.TwoPair;
+                                            }
+                                            else
+                                            {
+                                                if (IsOnePair)
+                                                {
+                                                    IEnumerable<byte> solo = new[] { _1p };
+                                                    IEnumerable<byte> rest = GetRanks().Except(solo).OrderByDescending(x => x);
+                                                    _rank1p = RankDistinct(solo.Concat(rest));
+                                                    return PokerOdds.PokerHandType.Pair;
+                                                }
+                                                else { _rankhc = GetRankCode(); return PokerHandType.HighCard; }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }//
+        }
+          
+        /// <summary>
+        /// take serialized value if any, else go to values computed by <see cref="PokerHandType"/>
+        /// </summary>
+        public int? ClassRank {get{
+            if (_clsrnk.HasValue)
+                return _clsrnk.Value;
+            else
+            {
+                if (_rankSTFL.HasValue) { return _rankSTFL.Value; }
+                else if (_rankFL.HasValue) { return _rankFL.Value; }
+                else if (_rankST.HasValue) { return _rankST.Value; }
+                else if (_rank4.HasValue) { return _rank4.Value; }
+                else if (_rankFH.HasValue) { return _rankFH.Value; }
+                else if (_rank3.HasValue) { return _rank3.Value; }
+                else if (_rank2p.HasValue) { return _rank2p.Value; }
+                else if (_rank1p.HasValue) { return _rank1p.Value; }
+                else if (_rankhc.HasValue) { return _rankhc.Value; }
+                else return null;
+            }
+        }}
+        #endregion
+
+        #region life
+        public Hand5() { }
+        // ints must be sorted ?
+        public Hand5(int i1, int i2, int i3, int i4, int i5)
+        {
+            c1 = i1; c2 = i2; c3 = i3; c4 = i4; c5 = i5;
+        }
+        public Hand5(Card i1, Card i2, Card i3, Card i4, Card i5)
+        {
+            c1 = i1; c2 = i2; c3 = i3; c4 = i4; c5 = i5;
+        }
+
+        public Hand5(Hand2 prvt, Hand3 flop)
+        {
+            this.c1 = prvt.c1; this.c2 = prvt.c2;
+            this.c3 = flop.c1; this.c4 = flop.c2; this.c5 = flop.c3;
+        }
+        
+        public Hand5(Hand5SerializableCollection.Hand5Serializable hs)
+        {
+            this._pht = hs.Type;
+            this._stringI = hs.StringI;
+            this._stringA = hs.StringA;
+            this._hc = hs.HashCode;
+            this._rc = hs.RankCode;
+            this._clsrnk = hs.ClassRank;
+        }
+        #endregion
+
+        #region prvt methods
+        IEnumerable<Face> GetFaces() { return GetPokerHand.Select(c => c.Face); }
+        IEnumerable<Color> GetSuits() { return GetPokerHand.Select(c => c.Color); }
+        IEnumerable<byte> GetRanks() { return GetPokerHand.Select(c => c.Rank); }
+        IEnumerable<byte> GetDistinctRanks() { return GetRanks().Distinct(); }
+
+
+        /// <summary>
+        /// A + k = 167
+        /// 2 + 3 = 1
+        /// 3 + 2 = 13
+        /// 2 + A = 12
+        /// </summary>
+        /// <returns>rank of a 4 of a kind (square) in its own class</returns>
+        int RankDistinct(IEnumerable<byte> benum)
+        {
+            return benum.Aggregate(0, (acc, x) => Defines.RANK_LENGTH * acc + x);
+        }
+        #endregion 
+        
         #region IEnumerable<Card> Members
 
         public IEnumerator<Card> GetEnumerator() { return GetPokerHand.GetEnumerator(); }
@@ -169,22 +322,34 @@ namespace PokerOdds
         #endregion
 
         #region poker hand prvt props
+        IEnumerable<Card> GetPokerHand
+        {
+            get
+            {
+                yield return c1;
+                yield return c2;
+                yield return c3;
+                yield return c4;
+                yield return c5;
+            }
+        }
         //10
         bool IsOnePair
         {
             get
             {
-                return IsPair(c1, c2) ||
-                    IsPair(c1, c3) ||
-                    IsPair(c1, c4) ||
-                    IsPair(c1, c5) ||
-                    IsPair(c2, c3) ||
-                    IsPair(c2, c4) ||
-                    IsPair(c2, c5) ||
-                    IsPair(c3, c4) ||
-                    IsPair(c3, c5) ||
-                    IsPair(c4, c5)
-                    ;
+                
+                         if ( IsPair(c1, c2)) {_1p=c1.Rank;return true;}
+                    else if ( IsPair(c1, c3)) {_1p=c1.Rank;return true;}
+                    else if ( IsPair(c1, c4)) {_1p=c1.Rank;return true;}
+                    else if ( IsPair(c1, c5)) {_1p=c1.Rank;return true;}
+                    else if ( IsPair(c2, c3)) {_1p=c2.Rank;return true;}
+                    else if ( IsPair(c2, c4)) {_1p=c2.Rank;return true;}
+                    else if ( IsPair(c2, c5)) {_1p=c2.Rank;return true;}
+                    else if ( IsPair(c3, c4)) {_1p=c3.Rank;return true;}
+                    else if ( IsPair(c3, c5)) {_1p=c3.Rank;return true;}
+                    else if ( IsPair(c4, c5)) {_1p=c4.Rank;return true;}
+                    else return false;
             }
         }
         //10
@@ -192,17 +357,18 @@ namespace PokerOdds
         {
             get
             {
-                return IsAll3(c1, c2, c3) ||
-                    IsAll3(c1, c2, c4) ||
-                    IsAll3(c1, c2, c5) ||
-                    IsAll3(c1, c3, c4) ||
-                    IsAll3(c1, c3, c5) ||
-                    IsAll3(c1, c4, c5) ||
-                    IsAll3(c2, c3, c4) ||
-                    IsAll3(c2, c3, c5) ||
-                    IsAll3(c2, c4, c5) ||
-                    IsAll3(c3, c4, c5)
-                    ;
+
+                     if (IsAll3(c1, c2, c3)) { _3kv = c1.Rank; _3ka = c4.Rank; _3kb = c5.Rank; return true; }
+                else if (IsAll3(c1, c2, c4)) { _3kv = c1.Rank; _3ka = c3.Rank; _3kb = c5.Rank; return true; }
+                else if (IsAll3(c1, c2, c5)) { _3kv = c1.Rank; _3ka = c3.Rank; _3kb = c4.Rank; return true; }
+                else if (IsAll3(c1, c3, c4)) { _3kv = c1.Rank; _3ka = c5.Rank; _3kb = c2.Rank; return true; }
+                else if (IsAll3(c1, c3, c5)) { _3kv = c1.Rank; _3ka = c2.Rank; _3kb = c4.Rank; return true; }
+                else if (IsAll3(c1, c4, c5)) { _3kv = c1.Rank; _3ka = c2.Rank; _3kb = c3.Rank; return true; }
+                else if (IsAll3(c2, c3, c4)) { _3kv = c2.Rank; _3ka = c1.Rank; _3kb = c5.Rank; return true; }
+                else if (IsAll3(c2, c3, c5)) { _3kv = c2.Rank; _3ka = c1.Rank; _3kb = c4.Rank; return true; }
+                else if (IsAll3(c2, c4, c5)) { _3kv = c2.Rank; _3ka = c3.Rank; _3kb = c1.Rank; return true; }
+                else if (IsAll3(c3, c4, c5)) { _3kv = c3.Rank; _3ka = c1.Rank; _3kb = c2.Rank; return true; }
+                else return false;
             }
         }
         //5
@@ -210,12 +376,12 @@ namespace PokerOdds
         {
             get
             {
-                return IsAll4(c1, c2, c3, c4) ||
-                    IsAll4(c1, c2, c3, c5) ||
-                    IsAll4(c1, c2, c4, c5) ||
-                    IsAll4(c1, c3, c4, c5) ||
-                    IsAll4(c5, c2, c3, c4)
-                    ;
+                if (IsAll4(c1, c2, c3, c4)) { _sqHi = c1.Rank; _sqLow = c5.Rank; return true; }
+                else if (IsAll4(c1, c2, c3, c5)) { _sqHi = c1.Rank; _sqLow = c4.Rank; return true; }
+                else if (IsAll4(c1, c2, c4, c5))  { _sqHi = c1.Rank; _sqLow = c3.Rank; return true; }
+                else if (IsAll4(c1, c3, c4, c5))  { _sqHi = c1.Rank; _sqLow = c2.Rank; return true; }
+                else if (IsAll4(c5, c2, c3, c4)) { _sqHi = c5.Rank; _sqLow = c1.Rank; return true; }
+                else return false;                
             }
         }
         //10
@@ -223,16 +389,17 @@ namespace PokerOdds
         {
             get
             {
-                return (IsPair(c1, c2) && IsAll3(c3, c4, c5)) ||
-             (IsPair(c1, c3) && IsAll3(c2, c4, c5)) ||
-             (IsPair(c1, c4) && IsAll3(c2, c3, c5)) ||
-             (IsPair(c1, c5) && IsAll3(c3, c4, c2)) ||
-             (IsPair(c2, c3) && IsAll3(c1, c4, c5)) ||
-             (IsPair(c2, c4) && IsAll3(c3, c1, c5)) ||
-             (IsPair(c2, c5) && IsAll3(c3, c4, c1)) ||
-             (IsPair(c3, c4) && IsAll3(c1, c2, c5)) ||
-             (IsPair(c3, c5) && IsAll3(c1, c4, c2)) ||
-             (IsPair(c4, c5) && IsAll3(c1, c2, c3));
+                if (IsPair(c1, c2) && IsAll3(c3, c4, c5)) { _fhHi = c3.Rank; _fhLow = c1.Rank; return true; }
+                else if (IsPair(c1, c3) && IsAll3(c2, c4, c5)) { _fhHi = c2.Rank; _fhLow = c1.Rank; return true; }
+                else if (IsPair(c1, c4) && IsAll3(c2, c3, c5)) { _fhHi = c2.Rank; _fhLow = c1.Rank; return true; }
+                else if (IsPair(c1, c5) && IsAll3(c3, c4, c2)) { _fhHi = c2.Rank; _fhLow = c1.Rank; return true; }
+                else if (IsPair(c2, c3) && IsAll3(c1, c4, c5)) { _fhHi = c1.Rank; _fhLow = c2.Rank; return true; }
+                else if (IsPair(c2, c4) && IsAll3(c3, c1, c5)) { _fhHi = c1.Rank; _fhLow = c2.Rank; return true; }
+                else if (IsPair(c2, c5) && IsAll3(c3, c4, c1)) { _fhHi = c1.Rank; _fhLow = c2.Rank; return true; }
+                else if (IsPair(c3, c4) && IsAll3(c1, c2, c5)) { _fhHi = c1.Rank; _fhLow = c3.Rank; return true; }
+                else if (IsPair(c3, c5) && IsAll3(c1, c4, c2)) { _fhHi = c1.Rank; _fhLow = c3.Rank; return true; }
+                else if (IsPair(c4, c5) && IsAll3(c1, c2, c3)) { _fhHi = c1.Rank; _fhLow = c4.Rank; return true; }
+                else return false;
             }
         }
 
@@ -240,16 +407,47 @@ namespace PokerOdds
         {
             get
             {
-                return (IsPair(c1, c2) && IsPair(c3, c4, c5)) ||
-             (IsPair(c1, c3) && IsPair(c2, c4, c5)) ||
-             (IsPair(c1, c4) && IsPair(c2, c3, c5)) ||
-             (IsPair(c1, c5) && IsPair(c3, c4, c2)) ||
-             (IsPair(c2, c3) && IsPair(c1, c4, c5)) ||
-             (IsPair(c2, c4) && IsPair(c3, c1, c5)) ||
-             (IsPair(c2, c5) && IsPair(c3, c4, c1)) ||
-             (IsPair(c3, c4) && IsPair(c1, c2, c5)) ||
-             (IsPair(c3, c5) && IsPair(c1, c4, c2)) ||
-             (IsPair(c4, c5) && IsPair(c1, c2, c3));
+                     if (IsPair(c1, c2) && IsPair(c3, c4)) { _2pM = c1.Rank; _2pm = c3.Rank; _2pr = c5.Rank; return true; }
+                else if (IsPair(c1, c2) && IsPair(c4, c5)) { _2pM = c1.Rank; _2pm = c4.Rank; _2pr = c3.Rank; return true; }
+                else if (IsPair(c1, c2) && IsPair(c3, c5)) { _2pM = c1.Rank; _2pm = c3.Rank; _2pr = c4.Rank; return true; }
+                //
+                else if (IsPair(c1, c3) && IsPair(c2, c4)) { _2pM = c1.Rank; _2pm = c2.Rank; _2pr = c5.Rank; return true; }
+                else if (IsPair(c1, c3) && IsPair(c2, c5)) { _2pM = c1.Rank; _2pm = c2.Rank; _2pr = c4.Rank; return true; }
+                else if (IsPair(c1, c3) && IsPair(c4, c5)) { _2pM = c1.Rank; _2pm = c4.Rank; _2pr = c2.Rank; return true; }
+                //
+                else if (IsPair(c1, c4) && IsPair(c2, c3)) { _2pM = c1.Rank; _2pm = c2.Rank; _2pr = c5.Rank; return true; }
+                else if (IsPair(c1, c4) && IsPair(c2, c5)) { _2pM = c1.Rank; _2pm = c2.Rank; _2pr = c3.Rank; return true; }
+                else if (IsPair(c1, c4) && IsPair(c3, c5)) { _2pM = c1.Rank; _2pm = c3.Rank; _2pr = c2.Rank; return true; }
+                //
+                else if (IsPair(c1, c5) && IsPair(c2, c3)) { _2pM = c1.Rank; _2pm = c2.Rank; _2pr = c4.Rank; return true; }
+                else if (IsPair(c1, c5) && IsPair(c2, c4)) { _2pM = c1.Rank; _2pm = c2.Rank; _2pr = c3.Rank; return true; }
+                else if (IsPair(c1, c5) && IsPair(c3, c4)) { _2pM = c1.Rank; _2pm = c3.Rank; _2pr = c2.Rank; return true; }
+                //
+                else if (IsPair(c2, c3) && IsPair(c1, c4)) { _2pM = c2.Rank; _2pm = c1.Rank; _2pr = c5.Rank; return true; }
+                else if (IsPair(c2, c3) && IsPair(c1, c5)) { _2pM = c2.Rank; _2pm = c1.Rank; _2pr = c4.Rank; return true; }
+                else if (IsPair(c2, c3) && IsPair(c4, c5)) { _2pM = c2.Rank; _2pm = c4.Rank; _2pr = c1.Rank; return true; }
+                //
+                else if (IsPair(c2, c4) && IsPair(c1, c3)) { _2pM = c2.Rank; _2pm = c1.Rank; _2pr = c5.Rank; return true; }
+                else if (IsPair(c2, c4) && IsPair(c1, c5)) { _2pM = c2.Rank; _2pm = c1.Rank; _2pr = c3.Rank; return true; }
+                else if (IsPair(c2, c4) && IsPair(c3, c5)) { _2pM = c2.Rank; _2pm = c3.Rank; _2pr = c1.Rank; return true; }
+                //
+                else if (IsPair(c2, c5) && IsPair(c1, c3)) { _2pM = c2.Rank; _2pm = c1.Rank; _2pr = c4.Rank; return true; }
+                else if (IsPair(c2, c5) && IsPair(c1, c4)) { _2pM = c2.Rank; _2pm = c1.Rank; _2pr = c3.Rank; return true; }
+                else if (IsPair(c2, c5) && IsPair(c3, c4)) { _2pM = c2.Rank; _2pm = c3.Rank; _2pr = c1.Rank; return true; }
+                //
+                else if (IsPair(c3, c4) && IsPair(c1, c2)) { _2pM = c3.Rank; _2pm = c1.Rank; _2pr = c5.Rank; return true; }
+                else if (IsPair(c3, c4) && IsPair(c1, c5)) { _2pM = c3.Rank; _2pm = c1.Rank; _2pr = c2.Rank; return true; }
+                else if (IsPair(c3, c4) && IsPair(c2, c5)) { _2pM = c3.Rank; _2pm = c2.Rank; _2pr = c1.Rank; return true; }
+                //
+                else if (IsPair(c3, c5) && IsPair(c1, c2)) { _2pM = c3.Rank; _2pm = c1.Rank; _2pr = c4.Rank; return true; }
+                else if (IsPair(c3, c5) && IsPair(c1, c4)) { _2pM = c3.Rank; _2pm = c1.Rank; _2pr = c2.Rank; return true; }
+                else if (IsPair(c3, c5) && IsPair(c2, c4)) { _2pM = c3.Rank; _2pm = c2.Rank; _2pr = c1.Rank; return true; }
+                //
+                else if (IsPair(c4, c5) && IsPair(c1, c2)) { _2pM = c4.Rank; _2pm = c1.Rank; _2pr = c3.Rank; return true; }
+                else if (IsPair(c4, c5) && IsPair(c1, c3)) { _2pM = c4.Rank; _2pm = c1.Rank; _2pr = c2.Rank; return true; }
+                else if (IsPair(c4, c5) && IsPair(c2, c3)) { _2pM = c4.Rank; _2pm = c2.Rank; _2pr = c1.Rank; return true; }
+                //
+                else return false;
             }
         }
         //5
@@ -287,7 +485,7 @@ namespace PokerOdds
         #region poker hand static utils
         //---
         private static bool IsPair(Card a, Card b) { return a.Face == b.Face; }
-        private static bool IsPair(Card x, Card y, Card z) { return IsPair(x, y) || IsPair(z, x) || IsPair(z, y); }
+        //private static bool IsPair(Card x, Card y, Card z) { return IsPair(x, y) || IsPair(z, x) || IsPair(z, y); }
         private static bool IsAll3(Card x, Card y, Card z) { return IsPair(x, y) && IsPair(y, z); }
         private static bool IsAll4(Card x, Card y, Card z, Card t) { return IsAll3(x, y, z) && IsPair(z, t); }
         //
@@ -297,6 +495,7 @@ namespace PokerOdds
         
         #endregion
 
+        #region object overrides
         /// <summary>
         /// 52 base number with 5 digits, a digit is 0:51
         /// </summary>
@@ -307,8 +506,15 @@ namespace PokerOdds
         /// <returns></returns>
         public override int GetHashCode()
         {
+            if (_hc.HasValue)
+            {
+                return _hc.Value;
+            }
+            else
+            { 
             var oe = GetPokerHand.OrderBy(c => c.Index);
             return oe.Aggregate(0, (acc, card) => Defines.DECK_LENGTH * acc + card.Index);
+            }
         }
 
         public override string ToString()
@@ -333,31 +539,50 @@ namespace PokerOdds
                 case "H": // base 52 no
                     return this.GetHashCode().ToString("000000000");
                 case "I":
-                { // all cards indices concatenated
-                    var cards = GetPokerHand.OrderBy(c => c.Index);
-                    var sb = cards.Aggregate(new StringBuilder(), (acc, card) => acc.Append(card.ToString("I")));
-                    return sb.ToString();
-                }
+                    { // all cards indices concatenated
+                        if (string.IsNullOrEmpty(_stringI))
+                        {
+                            var cards = GetPokerHand.OrderBy(c => c.Index);
+                            var sb = cards.Aggregate(new StringBuilder(), (acc, card) => acc.Append(card.ToString("I")));
+                            return sb.ToString();
+                        }
+                        else return _stringI;
+                    }
                 case "V":
-                {
-                    StringBuilder sb = new StringBuilder();
-                    sb.Append(c1.ToString("V"));
-                    sb.Append(c2.ToString("V"));
-                    sb.Append(c3.ToString("V"));
-                    sb.Append(c4.ToString("V"));
-                    sb.Append(c5.ToString("V"));
-                    return sb.ToString();
-                }
-                case "A":
-                    { // all cards abbreviations concatenated
-                        var cards = GetPokerHand.OrderBy(c => c.Face).ThenBy(c => c.Color);
-                        var sb = cards.Aggregate(new StringBuilder(), (acc, card) => acc.Append(card.ToString("A")));
+                    {
+                        StringBuilder sb = new StringBuilder();
+                        sb.Append(c1.ToString("V"));
+                        sb.Append(c2.ToString("V"));
+                        sb.Append(c3.ToString("V"));
+                        sb.Append(c4.ToString("V"));
+                        sb.Append(c5.ToString("V"));
                         return sb.ToString();
                     }
+                case "A":
+                    { // all cards abbreviations concatenated
+                        if (string.IsNullOrEmpty(_stringA))
+                        {
+                            var cards = GetPokerHand.OrderBy(c => c.Face).ThenBy(c => c.Color);
+                            var sb = cards.Aggregate(new StringBuilder(), (acc, card) => acc.Append(card.ToString("A")));
+                            return sb.ToString();
+                        }
+                        else return _stringA;
+                    }
+                case "R": // base 13 no
+                    return this.GetRankCode().ToString("000000");
                 default:
                 case "D":
                     return string.Format("{0}|{1}|{2}|{3}|{4}", c1, c2, c3, c4, c5);
             }
+        }
+
+        #endregion
+
+        public int GetRankCode() {
+            if (_rc.HasValue) { return _rc.Value; }
+            else {
+                return GetRanks().OrderByDescending(x => x).Aggregate(0, (acc, x) => Defines.RANK_LENGTH * acc + x);
+            } 
         }
 
         #region poker hand types enumerations
@@ -376,7 +601,7 @@ namespace PokerOdds
             }
         }
 
-        // [0 1 2 3 4] : [8 9 10 11 12] 
+        // [0 1 2 3 4] -:- [7 8 9 10 11] 
         // frequency: 32 
         public static IEnumerable<Hand5> AllStraightFlushes()
         { //up to 8 to avoid rf
@@ -733,5 +958,35 @@ namespace PokerOdds
             }
         } 
         #endregion
+
+
+        #region IComparable<Hand5> / IComparable Members
+
+        public int CompareTo(Hand5 other)
+        {
+            
+            if (this.PokerHandType > other.PokerHandType)
+                return 1;
+            else if (this.PokerHandType < other.PokerHandType)
+                return -1;
+            else
+                return Comparer<int>.Default.Compare(this.ClassRank.Value, other.ClassRank.Value);
+        }
+
+        public int CompareTo(object obj)
+        {
+            if (obj is Hand5)
+                return CompareTo(obj as Hand5);
+            else 
+                throw new ArgumentException();
+        }
+
+        public static bool operator < (Hand5 h1, Hand5 h2) { return h1.CompareTo(h2) < 0; }
+        public static bool operator > (Hand5 h1, Hand5 h2) { return h1.CompareTo(h2) > 0; }
+        public static bool operator <=(Hand5 h1, Hand5 h2) { return h1.CompareTo(h2) <= 0; }
+        public static bool operator >=(Hand5 h1, Hand5 h2) { return h1.CompareTo(h2) >= 0; }
+        #endregion
+
+        
     }
 }

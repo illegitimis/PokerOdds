@@ -14,9 +14,7 @@ namespace PokerOdds
     {
         #region inner class
         /// <summary>
-        /// office 15 abstract property protobuf wrapper (inner class)
-        /// a variant type
-        /// only one of the nullable properties gets actually written
+        /// <see cref="Hand5"/> wrapper with relevant info to serialize
         /// </summary>
         /// <remarks>
         /// DO NOT CHANGE THE ORDER OF PROTOMEMBER ATTRIBUTES!
@@ -48,10 +46,6 @@ namespace PokerOdds
             [ProtoMember(2, IsRequired = true)]
             public int HashCode { get; set; }
             
-            /// <summary>
-            /// NON-REQUIRED TYPES MUST BE ALL NULLABLE!
-            /// </summary>
-            
             [ProtoMember(3, IsRequired = true)]
             public string StringI { get; set; }
 
@@ -59,14 +53,35 @@ namespace PokerOdds
             public string StringA { get; set; }
             
             /// <summary>
-            /// 
+            /// rank code 
             /// </summary>
             [ProtoMember(5, IsRequired = false)]
-            public char[] CharI { get; set; }
+            public int? RankCode { get; set; }
+            /// <summary>
+            /// rank within current class
+            /// NON-REQUIRED TYPES MUST BE ALL NULLABLE!
+            /// </summary>
             [ProtoMember(6, IsRequired = false)]
-            public char[] CharA { get; set; }            
-          
-           
+            public int? ClassRank { get; set; }    
+       
+            public static explicit operator Hand5Serializable (Hand5 h5)
+            {
+                return new Hand5Serializable()
+                {
+                    Type = h5.PokerHandType
+                   ,
+                    HashCode = h5.GetHashCode()
+                   ,
+                    StringA = h5.ToString("A")
+                   ,
+                    StringI = h5.ToString("I")
+                    ,
+                    RankCode = h5.GetRankCode()
+                   ,
+                    ClassRank = h5.ClassRank
+                };
+                
+            }
         }
         #endregion
 
@@ -89,20 +104,7 @@ namespace PokerOdds
 
         public static void SerializeHand(string fileName, Hand5 h5)
         {
-            var h5s = new Hand5Serializable()
-            {
-                Type = h5.PokerHandType
-                ,
-                HashCode = h5.GetHashCode()
-                ,
-                StringA = h5.ToString("A")
-                ,
-                StringI = h5.ToString("I")
-            };
-            using (var stream = File.Create(fileName))
-            {
-                Serializer.Serialize<Hand5Serializable>(stream, h5s);
-            }
+            SerializeHand(fileName, (Hand5Serializable)h5);
         }
 
          public static Hand5Serializable DeserializeHand (string fileName)
@@ -113,29 +115,10 @@ namespace PokerOdds
             }
          }
 
-
          public static void SerializeHands(string fn, IEnumerable<Hand5> hands)
          {
-             Hand5Serializable[] converted = hands.Select(h5 => new Hand5Serializable()
-                 {
-                     Type = h5.PokerHandType
-                    ,
-                     HashCode = h5.GetHashCode()
-                    ,
-                     StringA = h5.ToString("A")
-                    ,
-                     StringI = h5.ToString("I")
-                 }
-                 ).ToArray();
-
-             var h5sc = new Hand5SerializableCollection()
-             {
-                 Hands = converted
-             };
-             using (var stream = File.Create(fn))
-             {
-                 Serializer.Serialize<Hand5SerializableCollection>(stream, h5sc);
-             }    
+             var converted = hands.Select(h5 => (Hand5Serializable)h5);
+             SerializeHands(fn, converted);
          }
 
          internal static void SerializeHands(string fn, IEnumerable<Hand5Serializable> srlzhands)
@@ -144,10 +127,7 @@ namespace PokerOdds
              {
                  Hands = srlzhands.ToArray()
              };
-             using (var stream = File.Create(fn))
-             {
-                 Serializer.Serialize<Hand5SerializableCollection>(stream, h5sc);
-             }
+             SerializeHands(fn, h5sc);
          }
 
          public static void SerializeHands(string fn, Hand5SerializableCollection h5sc)

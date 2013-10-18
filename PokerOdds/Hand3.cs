@@ -62,5 +62,9 @@
 
     }
 
+    public class Flop : Hand3 {
+        public Flop (int i1, int i2, int i3)  : base (i1,i2,i3){}
+        public Flop(Card i1, Card i2, Card i3) : base(i1, i2, i3) { }
+    }
 
 }

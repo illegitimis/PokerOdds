@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace PokerOdds.Tests
 {
@@ -214,17 +215,17 @@ namespace PokerOdds.Tests
             var si = h.ToString("I");
             var h5s = new Hand5SerializableCollection.Hand5Serializable()
             {
+                Type = h.PokerHandType
+                ,
                 HashCode = h.GetHashCode()
                 ,
                 StringA = sa
                 ,
                 StringI = si
                 ,
-                CharA = sa.ToCharArray()
+                RankCode = h.GetRankCode()
                 ,
-                CharI = si.ToCharArray()
-                ,
-                Type = h.PokerHandType
+                ClassRank = h.ClassRank                
             };
             Hand5SerializableCollection.SerializeHand(fn, h5s);
             fi = new FileInfo(fn);
@@ -249,8 +250,10 @@ namespace PokerOdds.Tests
             Assert.AreEqual(h5s.HashCode, h.GetHashCode());
             Assert.AreEqual(h5s.StringI, h.ToString("I"));
             Assert.AreEqual(h5s.StringA, h.ToString("A"));
-            CollectionAssert.AreEqual(h5s.CharI, h.ToString("I").ToCharArray());
-            CollectionAssert.AreEqual(h5s.CharA, h.ToString("A").ToCharArray());
+            if (h5s.RankCode.HasValue)
+                Assert.AreEqual(h5s.RankCode.Value, h.GetRankCode());
+            if (h5s.ClassRank.HasValue)
+                Assert.AreEqual(h5s.ClassRank, h.ClassRank);
         }
 
         [TestMethod()]
@@ -291,6 +294,126 @@ namespace PokerOdds.Tests
             
             //
             
+        }
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        public void Hand5_serialize_Common(string fn, IEnumerable<Hand5> hands, int count, int classRank, IEnumerable<int> ranks, PokerHandType pht)
+        {
+            var fi = new FileInfo(fn);
+            if (!fi.Exists || fi.Length == 0)
+            {
+                Hand5SerializableCollection.SerializeHands(fn, hands);
+                fi = new FileInfo(fn);
+                Assert.IsTrue(fi.Exists && fi.Length > 0);
+            }
+            var col = Hand5SerializableCollection.DeserializeHands(fn);
+            Assert.IsNotNull(col);
+            Assert.AreEqual(col.Hands.Length, count);
+            var h5s = col.Hands[0];
+            Assert.AreEqual(h5s.ClassRank, classRank);
+            Assert.AreEqual(h5s.RankCode, ranks.Aggregate(0, (acc, x) => Defines.RANK_LENGTH * acc + x));
+            Assert.AreEqual(h5s.Type, pht);
+        } 
+
+        [TestMethod()]
+        public void Hand5_serialize_RF()
+        {
+            Hand5_serialize_Common("RoyalFlushes.bin", Hand5.AllRoyalFlushes(), 4, 9, new[] { 12, 11, 10, 9, 8 }, PokerHandType.RoyalFlush);            
+        }
+
+        [TestMethod()]
+        public void Hand5_serialize_STFL()
+        {
+            Hand5_serialize_Common ("StraightFlushes.bin",Hand5.AllStraightFlushes(),32,1, new[] { 4, 3, 2, 1, 0 }, PokerHandType.StraightFlush);            
+        }
+
+        [TestMethod()]
+        public void Hand5_serialize_SteelWheels()
+        {
+            Hand5_serialize_Common("SteelWheels.bin", Hand5.AllSteelWheels(), 4, 0, new[] { 12, 3, 2, 1, 0 }, PokerHandType.SteelWheel);            
+        }
+
+        [TestMethod()]
+        public void Hand5_serialize_Wheels()
+        {
+            Hand5_serialize_Common("Wheels.bin", Hand5.AllWheels(), 1020, 0, new[] { 12, 3, 2, 1, 0 }, PokerHandType.Wheel);
+        }
+
+        [TestMethod()]
+        public void Hand5_serialize_Flushes()
+        {
+            var ranks = new[] { 5, 3, 2, 1, 0 };
+            int i = ranks.Aggregate(0, (acc, x) => Defines.RANK_LENGTH * acc + x);
+            Hand5_serialize_Common("Flushes.bin", Hand5.AllFlushes(), 5108, i, ranks, PokerHandType.Flush);
+        }
+        [TestMethod()]
+        public void Hand5_serialize_4k()
+        {
+            var ranks = new[] { 1, 0, 0, 0, 0 };
+            int i = ranks.Aggregate(0, (acc, x) => Defines.RANK_LENGTH * acc + x);
+            Hand5_serialize_Common("Squares.bin", Hand5.Squares(), 624, 1, ranks, PokerHandType.FourOfAKind);
+        }
+
+        [TestMethod()]
+        public void Hand5_serialize_FH()
+        {
+            var ranks = new[] { 1, 1, 0, 0, 0 };
+            int i = ranks.Aggregate(0, (acc, x) => Defines.RANK_LENGTH * acc + x);
+            Hand5_serialize_Common("FullHouse.bin", Hand5.AllFullHouses(), 3744, 1, ranks, PokerHandType.FullHouse);
+        }
+
+        [TestMethod()]
+        public void Hand5_serialize_3k()
+        {
+            var ranks = new[] { 0, 0, 0, 1, 2 }.OrderByDescending(x=>x);
+            int i = ranks.Aggregate(0, (acc, x) => Defines.RANK_LENGTH * acc + x);
+            Hand5_serialize_Common("Brelan.bin", Hand5.All3OfAKind(), 54912, 13*2+1, ranks, PokerHandType.ThreeOfAKind);
+        }
+
+        [TestMethod()]
+        public void Hand5_serialize_str8()
+        {
+            var ranks = new[] { 0, 1, 2, 3, 4 }.OrderByDescending(x => x);
+            int i = ranks.Aggregate(0, (acc, x) => Defines.RANK_LENGTH * acc + x);
+            Hand5_serialize_Common("Chinta.bin", Hand5.AllStraights(), 9180, 1, ranks, PokerHandType.Straight);
+        }
+
+        [TestMethod()]
+        public void Hand5_serialize_2p()
+        {
+            var ranks = new[] { 0, 0, 1, 1, 2 }.OrderByDescending(x => x);
+            int i = ranks.Aggregate(0, (acc, x) => Defines.RANK_LENGTH * acc + x);
+            Hand5_serialize_Common("Pair2.bin", Hand5.All2Pairs(), 123552, 1*13*13+2, ranks, PokerHandType.TwoPair);
+        }
+        [TestMethod()]
+        public void Hand5_serialize_1p()
+        {
+            var ranks = new[] { 0, 0, 1, 2, 3 }.OrderByDescending(x => x);
+            int i = ranks.Aggregate(0, (acc, x) => Defines.RANK_LENGTH * acc + x);
+            Hand5_serialize_Common("Pair1.bin", Hand5.All1Pairs(), 1098240, 3* 13 * 13 + 2*13+1, ranks, PokerHandType.Pair);
+        }
+
+        [TestMethod()]
+        public void Hand5_deserialize_1p()
+        {
+            var col = Hand5SerializableCollection.DeserializeHands("Pair1.bin");
+            Assert.IsNotNull(col);
+            Assert.AreEqual(col.Hands.Length, 1098240);
+            //
+            int? M = col.Hands.Max(h => h.ClassRank);
+            int? m = col.Hands.Min(h => h.ClassRank);
+            int refm = new[] { 12, 11, 10, 9 }.Aggregate(0, (acc, x) => Defines.RANK_LENGTH * acc + x);
+            //var ord = col.Hands.OrderByDescending (h=>h.ClassRank);
+            foreach (var g in col.Hands.GroupBy(h => h.ClassRank))
+            {
+                System.Diagnostics.Debug.WriteLine("key: {0}", g.Key);
+                foreach (var h in g)
+                {
+                    System.Diagnostics.Debug.WriteLine("{0,-10} {1,-10} {2} {3}", h.HashCode, h.RankCode, h.StringA, h.StringI);
+                }
+            }           
         }
     }
 }
